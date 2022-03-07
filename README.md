@@ -12,6 +12,7 @@ pip install -r requirements.txt
 ```
 ## Data
 I use MNIST data as my test case. There are 25 pairs of odd-even pairs of digits that can be used for our binary classification. Only one pair is used to train and test the model. To select the pair, pair_idx argument should be used. Indices of pairs are as follows:
+
 ![label_idx](https://user-images.githubusercontent.com/59674668/157088690-300f6e5d-4575-4312-9c49-9cd0534efeb2.png)
 
 To be able to feed the data in Logistic Regression, the images are flattened. Moreover, PCA is used to reduce the size of the input data from 784 to 50. 
