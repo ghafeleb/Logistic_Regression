@@ -3,7 +3,7 @@
 In this code, I have provided learning Logistic Regression employing Minibatch SGD. To keep the code simple, I deleted Newton method. However, if you are interested, I can add it and share the code again.
 To run the code, run the following command:
 ```bash
-python -m scripts.eval_baseline_methods --traffic_reading_filename=data/metr-la.h5
+python -m LR_code --pair_idx=0 --batch_size=0 --n_epoch=25 --n_stepsize=10
 ```
 ## Requirements
 I have coded Logistic Regression in Python 3. The requirements are:
