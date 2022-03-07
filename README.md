@@ -16,6 +16,7 @@ I use MNIST data as my test case. There are 25 pairs of odd-even pairs of digits
 - (0, 3): 1
 - …
 - (8, 9): 24
+
 To be able to feed the data in Logistic Regression, the images are flattened. Moreover, PCA is used to reduce the size of the input data from 784 to 50. 
 ## Run the Model
 To run the code, run the following command:
