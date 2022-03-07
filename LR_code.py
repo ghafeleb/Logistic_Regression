@@ -17,7 +17,7 @@ np.set_printoptions(precision=3, linewidth=240, suppress=True)
 np.random.seed(2021)
 
 ###Function to download and pre-process (normalize, PCA) mnist and store in "data" folder:
-##Returns 4 arrays: train/test_features_by_machine = , train/test_labels_by_machine
+##Returns 4 arrays: train/test_features_by_pair = , train/test_labels_by_pair
 def load_MNIST2(p, dim, path, q):
     if 'data' not in os.listdir('./'):
         os.mkdir('./data')
@@ -84,8 +84,8 @@ def load_MNIST2(p, dim, path, q):
     ## Mix individual tasks with overall task
     # each worker m gets (1-p)* 2*n = (1-p)*10,842 examples from specific tasks and p*10,842 from mixture of all tasks.
     # So p=1 -> homogeneous (zeta = 0); p=0 -> heterogeneous
-    features_by_machine = []
-    labels_by_machine = []
+    features_by_pair = []
+    labels_by_pair = []
     n_individual = int(np.round(2 * n_m * (1. - p)))  # int (1-p)*2n_m = (1-p)*10,842
     n_all = 2 * n_m - n_individual  # =int p*2n_m  = p*10,842
     for m, task_m in enumerate(all_tasks):  # m is btwn 0 and 24 inclusive
@@ -95,29 +95,29 @@ def load_MNIST2(p, dim, path, q):
                                          size=n_all)  # mixture of tasks: randomly choose p*2n_m examples from all 54,210 examples (all digits)
         data_for_m = np.concatenate([task_m[task_m_idxs, :], all_nums[all_nums_idxs, :]],
                                     axis=0)  # pair m gets 10,842 total examples: fraction p are mixed, 1-p are specific to task m (one eo pair)
-        features_by_machine.append(data_for_m[:, 1:])
-        labels_by_machine.append(data_for_m[:, 0])
-    features_by_machine = np.array(
-        features_by_machine)  # array of all 25 feauture sets (each set has 10,842 feauture vectors)
-    labels_by_machine = np.array(labels_by_machine)  # array of corresponding label sets
+        features_by_pair.append(data_for_m[:, 1:])
+        labels_by_pair.append(data_for_m[:, 0])
+    features_by_pair = np.array(
+        features_by_pair)  # array of all 25 feauture sets (each set has 10,842 feauture vectors)
+    labels_by_pair = np.array(labels_by_pair)  # array of corresponding label sets
     ###Train/Test split for each pair###
-    train_features_by_machine = []
-    test_features_by_machine = []
-    train_labels_by_machine = []
-    test_labels_by_machine = []
+    train_features_by_pair = []
+    test_features_by_pair = []
+    train_labels_by_pair = []
+    test_labels_by_pair = []
     for m, task_m in enumerate(all_tasks):
-        train_feat, test_feat, train_label, test_label = train_test_split(features_by_machine[m], labels_by_machine[m],
+        train_feat, test_feat, train_label, test_label = train_test_split(features_by_pair[m], labels_by_pair[m],
                                                                           test_size=0.20, random_state=1)
-        train_features_by_machine.append(train_feat)
-        test_features_by_machine.append(test_feat)
-        train_labels_by_machine.append(train_label)
-        test_labels_by_machine.append(test_label)
-    train_features_by_machine = np.array(train_features_by_machine)
-    test_features_by_machine = np.array(test_features_by_machine)
-    train_labels_by_machine = np.array(train_labels_by_machine)
-    test_labels_by_machine = np.array(test_labels_by_machine)
-    print(train_features_by_machine.shape)
-    return train_features_by_machine, train_labels_by_machine, test_features_by_machine, test_labels_by_machine, n_m
+        train_features_by_pair.append(train_feat)
+        test_features_by_pair.append(test_feat)
+        train_labels_by_pair.append(train_label)
+        test_labels_by_pair.append(test_label)
+    train_features_by_pair = np.array(train_features_by_pair)
+    test_features_by_pair = np.array(test_features_by_pair)
+    train_labels_by_pair = np.array(train_labels_by_pair)
+    test_labels_by_pair = np.array(test_labels_by_pair)
+    print(train_features_by_pair.shape)
+    return train_features_by_pair, train_labels_by_pair, test_features_by_pair, test_labels_by_pair, n_m
 
 
 ############################################## Logistic Regression ###############################################
