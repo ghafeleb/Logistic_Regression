@@ -24,7 +24,7 @@ def load_MNIST2(p, dim, path, q):
     if path not in os.listdir('./data'):
         os.mkdir('./data/' + path)
     # if data folder is not there, make one and download/preprocess mnist:
-    if 'processed_mnist_features_{:d}_q{:d}.npy'.format(dim, q) not in os.listdir('./data/' + path):
+    if 'processed_mnist_features_{:d}_q{:f}.npy'.format(dim, q) not in os.listdir('./data/' + path):
         # convert image to tensor and normalize (mean 0, std dev 1):
         transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.,), (1.,)), ])
         # download and store transformed dataset as variable mnist:
@@ -35,12 +35,12 @@ def load_MNIST2(p, dim, path, q):
         # apply PCA to features to reduce dimensionality to dim
         features = PCA(n_components=dim).fit_transform(features)
         # save processed features in "data" folder:
-        np.save('data/' + path + 'processed_mnist_features_{:d}_q{:d}.npy'.format(dim, q), features)
-        np.save('data/' + path + 'processed_mnist_features_{:d}_q{:d}.npy'.format(dim, q), labels)
+        np.save('data/' + path + 'processed_mnist_features_{:d}_q{:f}.npy'.format(dim, q), features)
+        np.save('data/' + path + 'processed_mnist_features_{:d}_q{:f}.npy'.format(dim, q), labels)
     # else (data is already there), load data:
     else:
-        features = np.load('data/' + path + 'processed_mnist_features_{:d}_q{:d}.npy'.format(dim, q))
-        labels = np.load('data/' + path + 'processed_mnist_features_{:d}_q{:d}.npy'.format(dim, q))
+        features = np.load('data/' + path + 'processed_mnist_features_{:d}_q{:f}.npy'.format(dim, q))
+        labels = np.load('data/' + path + 'processed_mnist_features_{:d}_q{:f}.npy'.format(dim, q))
 
     ## Group the data by digit
     n_m = int(min([np.sum(labels == i) for i in range(10)]) * q)  # smaller scale version
@@ -153,19 +153,19 @@ def test_err(w, features, labels, pair_idx):  # computes prediction error given 
 ############################################## Mini-batch SGD ###############################################
 def minibatch_sgd(x_len, batch_size, n_epoch, stepsize, loss_freq, f_eval, grad_eval, pair_idx=0, avg_window=1):
     losses = []
-    iterates = np.zeros(x_len)
+    beta_hat_temp = np.zeros(x_len)
     for r in range(n_epoch):
         g = np.zeros(x_len)  # start with g = 0 vector of dim x_len = 100
-        g += grad_eval(iterates, batch_size, pair_idx)  # evaluate stoch grad of log loss at last iterate
-        iterates = iterates - stepsize * g  # take SGD step and add new iterate to list iterates
+        g += grad_eval(beta_hat_temp, batch_size, pair_idx)  # evaluate stoch grad of log loss at last iterate
+        beta_hat_temp = beta_hat_temp - stepsize * g  # take SGD step and add new iterate to list beta_hat_temp
         if (r + 1) % loss_freq == 0:
-            losses.append(f_eval(iterates))  # evalute f (at average of last 7 iterates) every loss_freq rounds and append to list "losses"
+            losses.append(f_eval(beta_hat_temp))  # evalute f (at average of last 7 beta_hat_temp) every loss_freq rounds and append to list "losses"
             print('Iteration: {:d}/{:d}   Loss: {:f}                 \r'.format(r + 1, n_epoch, losses[-1]), end='')
             if losses[-1] > 100:
                 print('\nLoss is diverging: Loss = {:f}'.format(losses[-1]))
-                return iterates, losses, 'diverged'
+                return beta_hat_temp, losses, 'diverged'
     print('')
-    return iterates, losses, 'converged'
+    return beta_hat_temp, 'converged'
 ##################################################################################################################
 
 
@@ -174,10 +174,9 @@ def LogisticRegression(args, train_features, train_labels, my_test=False):
     batch_size = args.batch_size
     n_epoch = args.n_epoch
     n_stepsize = args.n_stepsize
-    q = args.q
+    q = 1/args.a
 
     loss_freq = 5 # Frequency of checking loss for printing loss
-
     # keep track of train excess risk too
     if my_test:
         dim = 50 # Dimension of input data
@@ -210,21 +209,21 @@ def LogisticRegression(args, train_features, train_labels, my_test=False):
     MB_w = [np.zeros(dim)] * len(lg_stepsizes)
     for i, stepsize in enumerate(lg_stepsizes):
         print('Stepsize {:.5f}:  {:d}/{:d}'.format(stepsize, i + 1, len(lg_stepsizes)))
-        iterates, l, success = minibatch_sgd(x_len, batch_size, n_epoch, stepsize, loss_freq, f_eval, grad_eval)
+        beta_hat_temp, success = minibatch_sgd(x_len, batch_size, n_epoch, stepsize, loss_freq, f_eval, grad_eval)
         if success == 'converged':
-            MB_w[i] += iterates
+            MB_w[i] += beta_hat_temp
         else:
             MB_results[:, i] += 100
     MB_step_index = np.argmin(MB_results, axis=1)
     final_MB_step_index = MB_step_index[-1]
-
     if my_test:
         MB_test_error = test_err(MB_w[final_MB_step_index], test_features, test_labels, pair_idx)
     MB_train_error = test_err(MB_w[final_MB_step_index], train_features, train_labels, pair_idx)
 
     print("MB train error", MB_train_error)
     print("MB test error", MB_test_error)
-    return MB_w[final_MB_step_index]
+    beta_hat = MB_w[final_MB_step_index]
+    return beta_hat
 
 
 if __name__ == '__main__':
@@ -233,6 +232,6 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=0, help="Batch size in Mini-batch SGD, default=0 means full batch (i.e. GD)")
     parser.add_argument('--n_epoch', type=int, default=25, help="Number of epochs")
     parser.add_argument('--n_stepsize', type=int, default=10, help="Number of stepsizes used in hyperparameter tuning")
-    parser.add_argument('--q', type=int, default=1, help="Fraction of mnist data we wish to use; q = 1 -> 8673 train examples per pair; q = 1/10 -> 867 train examples per pair")
+    parser.add_argument('--a', type=int, default=1, help="It indicates the fraction of mnist data we wish to use; a = 1 -> 1/1 of train examples per pair; a = 10 -> 1/10 of train examples per pair")
     args = parser.parse_args()
     beta_hat = LogisticRegression(args, [], [], True)
