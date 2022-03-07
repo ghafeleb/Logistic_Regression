@@ -220,8 +220,8 @@ def LogisticRegression(args, train_features, train_labels, my_test=False):
         MB_test_error = test_err(MB_w[final_MB_step_index], test_features, test_labels, pair_idx)
     MB_train_error = test_err(MB_w[final_MB_step_index], train_features, train_labels, pair_idx)
 
-    print("MB train error", MB_train_error)
-    print("MB test error", MB_test_error)
+    print("MB train accuracy", 1-MB_train_error)
+    print("MB test accuracy", 1-MB_test_error)
     beta_hat = MB_w[final_MB_step_index]
     return beta_hat
 
