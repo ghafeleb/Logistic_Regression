@@ -1,4 +1,4 @@
-# LR
+# Logistic Regression
 ## Model
 The code is the implementation of Minibatch SGD to learn Logistic Regression model.
 ## Requirements
